@@ -1,7 +1,7 @@
 app-id: org.fcitx.Fcitx5.Addon.Rime
 runtime: org.fcitx.Fcitx5
 runtime-version: stable
-sdk: org.kde.Sdk//6.10
+sdk: org.kde.Sdk//6.11
 build-extension: true
 separate-locales: false
 build-options:
@@ -20,12 +20,128 @@ cleanup:
   - /share/cmake
   - '*.la'
 modules:
-  - modules/boost.yaml
-  - modules/capnproto.yaml
-  - modules/yaml-cpp.yaml
-  - modules/leveldb.yaml
-  - modules/marisa.yaml
-  - modules/opencc.yaml
+  - name: boost
+    buildsystem: simple
+    sources:
+      - type: archive
+        url: https://archives.boost.io/release/1.92.0/source/boost_1_92_0.tar.bz2
+        sha256: 5c1d40cb8e19adbf740a4ec2da35b3e58f3f5804b1dce44deb53df72193cbc6c
+        x-checker-data:
+          type: anitya
+          project-id: 6845
+          stable-only: true
+          url-template: https://archives.boost.io/release/$version/source/boost_${major}_${minor}_${patch}.tar.bz2
+          versions:
+            '!=': 1.91.0-1
+    build-commands:
+      - ./bootstrap.sh --prefix=${FLATPAK_DEST} --with-libraries=iostreams,regex,filesystem,locale
+      - ./b2 headers
+      - ./b2 -j$FLATPAK_BUILDER_N_JOBS install variant=release cxxstd=17 --layout=system
+  - name: capnproto
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_SHARED_LIBS=ON
+    sources:
+      - type: git
+        url: https://github.com/capnproto/capnproto
+        tag: v1.5.0
+        x-checker-data:
+          type: anitya
+          project-id: 11515
+          stable-only: true
+          tag-template: v${version}
+        commit: 373e61ec89e2359f1c362e9b2eadc552f4779306
+  - name: yaml-cpp
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_SHARED_LIBS=ON
+      - -DYAML_BUILD_SHARED_LIBS=ON
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+    sources:
+      - type: archive
+        url: https://github.com/jbeder/yaml-cpp/archive/yaml-cpp-0.9.0.tar.gz
+        sha256: 25cb043240f828a8c51beb830569634bc7ac603978e0f69d6b63558dadefd49a
+        x-checker-data:
+          type: anitya
+          project-id: 5284
+          stable-only: true
+          url-template: https://github.com/jbeder/yaml-cpp/archive/yaml-cpp-${version}.tar.gz
+  - name: leveldb
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_SHARED_LIBS=1
+      - -DLEVELDB_BUILD_TESTS=Off
+      - -DLEVELDB_BUILD_BENCHMARKS=Off
+    sources:
+      - type: archive
+        url: https://github.com/google/leveldb/archive/1.23.tar.gz
+        sha256: 9a37f8a6174f09bd622bc723b55881dc541cd50747cbd08831c2a82d620f6d76
+        x-checker-data:
+          type: anitya
+          project-id: 9338
+          stable-only: true
+          url-template: https://github.com/google/leveldb/archive/${version}.tar.gz
+  - name: marisa
+    buildsystem: cmake-ninja
+    sources:
+      - type: archive
+        url: https://github.com/s-yata/marisa-trie/archive/v0.3.1.tar.gz
+        sha256: 986ed5e2967435e3a3932a8c95980993ae5a196111e377721f0849cad4e807f3
+        x-checker-data:
+          type: anitya
+          project-id: 242978
+          stable-only: true
+          url-template: https://github.com/s-yata/marisa-trie/archive/v${version}.tar.gz
+      - type: patch
+        path: cf4602f08df49861d987d122bd85bfdb456fe7a0.patch
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_SHARED_LIBS=On
+    build-commands:
+      - make -C bindings swig-python3
+      - find ../..
+      - cd bindings/python3 && python3 setup.py build_ext --include-dirs=../../include
+        --library-dirs=../../
+      - cd bindings/python3 && python3 setup.py build
+    post-install:
+      - cd bindings/python3 && python3 setup.py install --skip-build --prefix=${FLATPAK_DEST}
+        --root=/ --optimize=1
+    modules:
+      - name: swig
+        sources:
+          - type: archive
+            url: https://downloads.sourceforge.net/swig/swig-4.5.0.tar.gz
+            sha256: 22ae0e887f8cca8031a325c67d005207653200b40e71edb3f88780e28e47d0ff
+            x-checker-data:
+              type: anitya
+              project-id: 4919
+              stable-only: true
+              url-template: https://downloads.sourceforge.net/swig/swig-${version}.tar.gz
+        cleanup:
+          - '*'
+  - name: opencc
+    buildsystem: cmake-ninja
+    no-parallel-make: true
+    sources:
+      - type: git
+        url: https://github.com/BYVoid/OpenCC/
+        tag: ver.1.4.2
+        x-checker-data:
+          type: anitya
+          project-id: 2542
+          stable-only: true
+          tag-template: ver.${version}
+        commit: 025f371dc76b598d77384fbdab90c937471844d8
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+    cleanup:
+      - /bin
+      - /include
+      - /lib/cmake
+      - /lib/pkgconfig
   - shared-modules/lua5.3/lua-5.3.5.json
   - name: librime
     buildsystem: cmake-ninja
@@ -146,7 +262,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/fcitx/fcitx5-rime
-        tag: 5.1.14
-        commit: c1974da96c15f4da628c1e5b2874f1fe1bb20b09
+        tag: 5.1.15
+        commit: 16e95d94d5d1b390fc55ee14429b5ffa3a0902db
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
