@@ -113,8 +113,8 @@ modules:
       - name: swig
         sources:
           - type: archive
-            url: https://downloads.sourceforge.net/swig/swig-4.5.0.tar.gz
-            sha256: 22ae0e887f8cca8031a325c67d005207653200b40e71edb3f88780e28e47d0ff
+            url: https://downloads.sourceforge.net/swig/swig-4.5.1.tar.gz
+            sha256: 7fec50b27deddab5455a9633780b6341eddfb96215a7619e93a76eb27178f653
             x-checker-data:
               type: anitya
               project-id: 4919
@@ -189,13 +189,8 @@ modules:
         \ != \"rime-essay\" ] &&\n    [ \"$_ime\" != \"rime-prelude\" ] &&\n    install\
         \ -Dm644 ${_ime}/*.yaml -t rime-data/\ndone\ncd rime-data/\nfor _ime_schema\
         \ in $(ls *.schema.yaml); do\n  rime_deployer --compile $_ime_schema\ndone\n"
-      - 'install -Dm644 rime-data/*.{txt,yaml} -t ${FLATPAK_DEST}/share/rime-data/
-
-        rm rime-data/build/*.txt
-
-        install -Dm644 rime-data/build/* -t ${FLATPAK_DEST}/share/rime-data/build/
-
-        '
+      - "install -Dm644 rime-data/*.{txt,yaml} -t ${FLATPAK_DEST}/share/rime-data/\n\
+        rm rime-data/build/*.txt\ninstall -Dm644 rime-data/build/* -t ${FLATPAK_DEST}/share/rime-data/build/\n"
     sources:
       - type: archive
         url: https://github.com/rime/rime-essay/archive/917e5691d090f75c40f0bc72476c2f483bae0c21/rime-essay-917e5691d090f75c40f0bc72476c2f483bae0c21.tar.gz
